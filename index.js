@@ -20,8 +20,17 @@ global.cache = {
     messages: new NodeCache({ stdTTL: 60, checkperiod: 80, useClones: false }),
 };
 
-if (!fs.existsSync("./resources/auth/creds.json")) {
-    MakeSession(global.config.SESSION_ID, "./resources/auth")
+async function initializeSession() {
+    if (!fs.existsSync("./resources/auth/creds.json")) {
+        console.log("Session not found. Creating session...");
+        try {
+            await MakeSession(global.config.SESSION_ID, "./resources/auth");
+            console.log("Session created successfully.");
+        } catch (error) {
+            console.error("Failed to create session:", error.message);
+            process.exit(1);
+        }
+    }
 }
 
 try {
@@ -715,9 +724,15 @@ app.get("/", (req, res) => res.type("html").send(`<p2>Hello world</p2>`));
 
 app.listen(port, () => console.log(`Server listening on http://localhost:${port}!`));
 
-try {
-    axiom();
-    p();
-} catch (error) {
-    console.error("Fatal error in startup:", error);
+async function startBot() {
+    try {
+        await initializeSession();
+        await p();
+        axiom();
+    } catch (error) {
+        console.error("Fatal error in startup:", error);
+        process.exit(1);
+    }
 }
+
+startBot();
