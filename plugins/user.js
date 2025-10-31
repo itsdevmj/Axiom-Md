@@ -23,7 +23,7 @@ command({
 });
 
 // ============ UPDATE COMMAND ============
-const GITHUB_REPO = process.env.GITHUB_REPO || "owner/repo";
+const GITHUB_REPO = process.env.GITHUB_REPO || "itsdevmj/Axiom-Md";
 const BRANCH = global.config.BRANCH || "master";
 
 async function getRepoFiles(repo, branch) {
