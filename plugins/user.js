@@ -24,7 +24,7 @@ command({
 
 // ============ UPDATE COMMAND ============
 const GITHUB_REPO = process.env.GITHUB_REPO || "itsdevmj/Axiom-Md";
-const BRANCH = global.config.BRANCH || "master";
+const BRANCH = global.config.BRANCH || "main";
 
 async function getRepoFiles(repo, branch) {
     const apiUrl = `https://api.github.com/repos/${repo}/git/trees/${branch}?recursive=1`;
