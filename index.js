@@ -354,7 +354,7 @@ async function axiom() {
                                 const videoContextInfo = {
                                     ...mediaContextInfo,
                                     externalAdReply: {
-                                        title: isViewOnce ? "🔒 View-Once Video" : (isStatus ? "Deleted Status Video" : "Deleted Video"),
+                                        title: isViewOnce ? "View-Once Video" : (isStatus ? "Deleted Status Video" : "Deleted Video"),
                                         body: `From: @${senderName}${isGroup && !isStatus ? ` • ${chatId.split('@')[0]}` : ''}`,
                                         mediaType: 1,
                                         renderLargerThumbnail: false,
@@ -483,16 +483,6 @@ async function axiom() {
                         const chatId = msg.key.remoteJid;
                         const isGroup = chatId.endsWith("@g.us");
                         const chatName = isGroup ? (await conn.groupMetadata(chatId).catch(() => ({ subject: chatId }))).subject : chatId;
-
-                        console.log("========================================");
-                        console.log("🔒 VIEW ONCE MESSAGE DETECTED");
-                        console.log("========================================");
-                        console.log(`From: ${senderName} (${sender})`);
-                        console.log(`Chat: ${chatName}`);
-                        console.log(`Type: ${isGroup ? "Group" : "Private"}`);
-                        console.log(`Message ID: ${msg.key.id}`);
-                        console.log(`Timestamp: ${new Date().toLocaleString()}`);
-                        console.log("========================================");
                     }
 
                     const cacheData = {
@@ -507,11 +497,11 @@ async function axiom() {
 
                     // For view-once messages, cache the media immediately
                     if (isViewOnce) {
-                        if (global.config.LOGS) {
-                            console.log("Attempting to cache view-once media...");
-                            console.log("Message keys:", Object.keys(rawMsg.message || {}));
-                            console.log("Key.isViewOnce:", rawMsg.key?.isViewOnce);
-                        }
+                        // if (global.config.LOGS) {
+                        //     console.log("Attempting to cache view-once media...");
+                        //     console.log("Message keys:", Object.keys(rawMsg.message || {}));
+                        //     console.log("Key.isViewOnce:", rawMsg.key?.isViewOnce);
+                        // }
 
                         // Skip if message was already viewed (key.isViewOnce but no message content)
                         if (rawMsg.key?.isViewOnce === true && !rawMsg.message) {
