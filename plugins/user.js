@@ -64,7 +64,10 @@ command({
                     if (file.path.startsWith('.git') ||
                         file.path === 'config.env' ||
                         file.path.startsWith('session/') ||
-                        file.path === 'resources/database.json') {
+                        file.path === 'resources/database.json') ||
+                        file.path === 'resources/pluginDB.json') ||
+                        file.path === 'package.json') ||
+                        file.path === 'lib/store.json'{
                         continue;
                     }
 
