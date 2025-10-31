@@ -26,7 +26,7 @@ global.config = {
     SESSION_ID: process.env.SESSION_ID || '',
     PORT: process.env.PORT || 8000,
     HANDLERS: process.env.HANDLER || '.',
-    BRANCH: 'master',
+    BRANCH: 'main',
     PACKNAME: process.env.PACKNAME || '',
     AUTHOR: process.env.AUTHOR || 'M4STERJOSH',
     SUDO: global.SettingsDB.getSudoList(),
