@@ -61,16 +61,17 @@ command({
                 const files = await getRepoFiles(GITHUB_REPO, BRANCH);
 
                 for (const file of files) {
-                    if (file.path.startsWith('.git') ||
-                        file.path === 'config.env' ||
-                        file.path.startsWith('session/') ||
-                        file.path === 'resources/database.json') ||
-                        file.path === 'resources/pluginDB.json') ||
-                        file.path === 'package.json') ||
-                        file.path === 'lib/store.json'{
-                        continue;
-                    }
-
+    if (
+        file.path.startsWith('.git') ||
+        file.path === 'config.env' ||
+        file.path.startsWith('session/') ||
+        file.path === 'resources/database.json' ||
+        file.path === 'resources/pluginDB.json' ||
+        file.path === 'package.json' ||
+        file.path === 'lib/store.json'
+    ) {
+        continue;
+    }
                     try {
                         const content = await downloadFile(GITHUB_REPO, BRANCH, file.path);
                         const filePath = path.join(process.cwd(), file.path);
