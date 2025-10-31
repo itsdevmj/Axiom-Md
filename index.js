@@ -113,8 +113,8 @@ async function axiom() {
 
                         // Check for updates
                         try {
-                            const GITHUB_REPO = process.env.GITHUB_REPO || "owner/repo";
-                            const BRANCH = global.config.BRANCH || "master";
+                            const GITHUB_REPO = process.env.GITHUB_REPO || "itsdevmj/Axiom-Md";
+                            const BRANCH = global.config.BRANCH || "main";
                             const commitUrl = `https://api.github.com/repos/${GITHUB_REPO}/commits/${BRANCH}`;
                             const { data: commitData } = await axios.get(commitUrl);
                             const commitMessage = commitData.commit.message.split('\n')[0];
