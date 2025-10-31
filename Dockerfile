@@ -1,4 +1,4 @@
-FROM node:18
+FROM node:20
 
 WORKDIR /app
 
@@ -7,4 +7,4 @@ RUN npm install --force
 
 COPY . .
 
-CMD ["node", "index.js"]
+CMD ["npm", "start"]
