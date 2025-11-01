@@ -16,7 +16,7 @@ envSudo.forEach(number => {
 });
 
 global.config = {
-    ANTILINK: process.env.ANTI_LINK === 'true' || false,
+    ANTILINK: process.env.ANTI_LINK === 'false' || false,
     ALWAYS_ONLINE: global.SettingsDB.getAlwaysOnline(),
     AUTO_TYPING: global.SettingsDB.getAutoTyping(),
     AUTO_RECORD: global.SettingsDB.getAutoRecord(),
