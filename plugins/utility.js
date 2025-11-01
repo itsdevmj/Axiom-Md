@@ -3,7 +3,6 @@ const { command } = require("../lib");
 // ============ ANTI-DELETE COMMAND ============
 command({
     pattern: "antidelete",
-    fromMe: true,
     desc: "Enable/disable anti-delete globally",
     type: "utility"
 }, async (message, match) => {
@@ -45,7 +44,6 @@ command({
 // ============ ANTI-DELETE STATUS COMMAND ============
 command({
     pattern: "antidelstatus",
-    fromMe: true,
     desc: "Enable/disable anti-delete for status",
     type: "utility"
 }, async (message, match) => {
@@ -76,7 +74,6 @@ command({
 // ============ AUTO STATUS COMMAND ============
 command({
     pattern: "status",
-    fromMe: true,
     desc: "Enable/disable auto status view",
     type: "utility"
 }, async (message, match) => {

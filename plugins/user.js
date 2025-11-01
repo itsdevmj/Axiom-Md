@@ -7,7 +7,6 @@ const { getDevice } = require("@whiskeysockets/baileys");
 // ============ PING COMMAND ============
 command({
     pattern: "ping",
-    fromMe: true,
     desc: "Check bot response time",
     type: "user"
 }, async (message, match, m) => {
@@ -22,103 +21,9 @@ command({
     });
 });
 
-// ============ UPDATE COMMAND ============
-const GITHUB_REPO = process.env.GITHUB_REPO || "itsdevmj/Axiom-Md";
-const BRANCH = global.config.BRANCH || "main";
-
-async function getRepoFiles(repo, branch) {
-    const apiUrl = `https://api.github.com/repos/${repo}/git/trees/${branch}?recursive=1`;
-    const { data } = await axios.get(apiUrl);
-    return data.tree.filter(item => item.type === "blob");
-}
-
-async function downloadFile(repo, branch, filePath) {
-    const url = `https://raw.githubusercontent.com/${repo}/${branch}/${filePath}`;
-    const { data } = await axios.get(url);
-    return data;
-}
-
-command({
-    pattern: "update",
-    fromMe: true,
-    desc: "Check for updates and update bot from GitHub",
-    type: "user"
-}, async (message, match) => {
-    try {
-        const msg = await message.reply("_Checking for updates..._");
-
-        const commitUrl = `https://api.github.com/repos/${GITHUB_REPO}/commits/${BRANCH}`;
-        const { data: commitData } = await axios.get(commitUrl);
-        const commitMessage = commitData.commit.message;
-
-        if (match === "now") {
-            await message.client.sendMessage(message.jid, {
-                text: "_Updating Axiom..._",
-                edit: msg.key
-            });
-
-            try {
-                const files = await getRepoFiles(GITHUB_REPO, BRANCH);
-
-                for (const file of files) {
-                    if (
-                        file.path.startsWith('.git') ||
-                        file.path === 'config.env' ||
-                        file.path.startsWith('session/') ||
-                        file.path === 'resources/database.json' ||
-                        file.path === 'resources/pluginDB.json' ||
-                        file.path === 'package.json' ||
-                        file.path === 'lib/store.json'
-                    ) {
-                        continue;
-                    }
-                    try {
-                        const content = await downloadFile(GITHUB_REPO, BRANCH, file.path);
-                        const filePath = path.join(process.cwd(), file.path);
-                        const dir = path.dirname(filePath);
-
-                        if (!fs.existsSync(dir)) {
-                            fs.mkdirSync(dir, { recursive: true });
-                        }
-
-                        // Convert objects to JSON strings before writing
-                        const dataToWrite = typeof content === 'object' && content !== null
-                            ? JSON.stringify(content, null, 2)
-                            : content;
-
-                        fs.writeFileSync(filePath, dataToWrite);
-                    } catch (err) {
-                        console.error(`Failed to update ${file.path}:`, err.message);
-                    }
-                }
-
-                await message.client.sendMessage(message.jid, {
-                    text: "_Axiom Updated_",
-                    edit: msg.key
-                });
-
-                setTimeout(() => process.exit(0), 1000);
-            } catch (error) {
-                return await message.reply(`_Update failed!_\n\n\`\`\`${error.message}\`\`\``);
-            }
-        } else {
-            const updateMsg = `*Update Available!*\n\n${commitMessage}\n\n_Use .update now to update_`;
-            await message.client.sendMessage(message.jid, {
-                text: updateMsg,
-                edit: msg.key
-            });
-        }
-
-    } catch (error) {
-        console.error(error);
-        await message.reply(`_Error checking updates:_\n\n\`\`\`${error.message}\`\`\``);
-    }
-});
-
 // ============ VIEW ONCE COMMAND ============
 command({
     pattern: "vv",
-    fromMe: true,
     desc: "Decrypt view once",
     type: "user"
 }, async (message, match, m) => {
@@ -137,7 +42,6 @@ command({
 // ============ PLUGIN MANAGEMENT COMMANDS ============
 command({
     pattern: "install",
-    fromMe: true,
     desc: "Installs plugins",
     type: "user"
 }, async (message, match) => {
@@ -187,7 +91,6 @@ command({
 
 command({
     pattern: "plugins",
-    fromMe: true,
     desc: "Plugin list",
     type: "user"
 }, async (message, match) => {
@@ -202,7 +105,6 @@ command({
 
 command({
     pattern: "remove",
-    fromMe: true,
     desc: "Remove plugins",
     type: "user"
 }, async (message, match) => {
@@ -225,7 +127,6 @@ const validateNumber = (number) => {
 
 command({
     pattern: "setsudo",
-    fromMe: true,
     desc: "Set sudo",
     type: "user"
 }, async (message, match) => {
@@ -248,7 +149,6 @@ command({
 
 command({
     pattern: "delsudo",
-    fromMe: true,
     desc: "Remove sudo",
     type: "user"
 }, async (message, match) => {
@@ -267,7 +167,6 @@ command({
 
 command({
     pattern: "getsudo",
-    fromMe: true,
     desc: "List sudo users",
     type: "user"
 }, async (message) => {
@@ -282,7 +181,6 @@ command({
 
 command({
     pattern: "ban",
-    fromMe: true,
     desc: "Ban a user from using the bot",
     type: "user"
 }, async (message, match) => {
@@ -307,7 +205,6 @@ command({
 
 command({
     pattern: "unban",
-    fromMe: true,
     desc: "Unban a user",
     type: "user"
 }, async (message, match) => {
@@ -332,7 +229,6 @@ command({
 
 command({
     pattern: "listban",
-    fromMe: true,
     desc: "List all banned users",
     type: "user"
 }, async (message) => {
@@ -348,7 +244,6 @@ command({
 // ============ PRESENCE COMMANDS ============
 command({
     pattern: "online",
-    fromMe: true,
     desc: "Toggle always online mode",
     type: "user"
 }, async (message, match) => {
@@ -381,7 +276,6 @@ command({
 
 command({
     pattern: "typing",
-    fromMe: true,
     desc: "Toggle auto-typing mode",
     type: "user"
 }, async (message, match) => {
@@ -415,7 +309,6 @@ command({
 
 command({
     pattern: "record",
-    fromMe: true,
     desc: "Toggle auto-recording mode",
     type: "user"
 }, async (message, match) => {
@@ -449,7 +342,6 @@ command({
 
 command({
     pattern: "autoread",
-    fromMe: true,
     desc: "Toggle auto-read mode",
     type: "user"
 }, async (message, match) => {
@@ -482,7 +374,6 @@ command({
 
 command({
     pattern: "presence",
-    fromMe: true,
     desc: "View all presence settings",
     type: "user"
 }, async (message, match) => {
@@ -513,7 +404,6 @@ command({
 // ============ CALL REJECT COMMANDS ============
 command({
     pattern: "anticall",
-    fromMe: true,
     desc: "Toggle auto call reject",
     type: "user"
 }, async (message, match) => {
@@ -548,7 +438,6 @@ command({
 
 command({
     pattern: "setcallmsg",
-    fromMe: true,
     desc: "Set auto call reject message",
     type: "user"
 }, async (message, match) => {
@@ -565,7 +454,6 @@ command({
 // ============ PROFILE PICTURE COMMANDS ============
 command({
     pattern: "setpp",
-    fromMe: true,
     desc: "Set profile picture from quoted message or mentioned user",
     type: "user"
 }, async (message, match) => {
@@ -651,7 +539,6 @@ command({
 
 command({
     pattern: "getpp",
-    fromMe: true,
     desc: "Get profile picture of mentioned user or quoted message sender",
     type: "user"
 }, async (message, match) => {
@@ -714,7 +601,6 @@ command({
 // ============ OWNER COMMAND ============
 command({
     pattern: "owner",
-    fromMe: false,
     desc: "Get owner contact",
     type: "user"
 }, async (message) => {
@@ -745,7 +631,6 @@ command({
 // ============ UPTIME COMMAND ============
 command({
     pattern: "uptime",
-    fromMe: false,
     desc: "Check bot uptime",
     type: "user"
 }, async (message) => {
@@ -766,6 +651,147 @@ command({
         await message.reply(uptimeText);
     } catch (error) {
         console.error("Error getting uptime:", error);
+        await message.reply(`_Error: ${error.message}_`);
+    }
+});
+
+// ============ SAVE COMMAND ============
+command({
+    pattern: "save",
+    desc: "Save quoted message to your DM",
+    type: "user"
+}, async (message, match, m) => {
+    try {
+        if (!message.reply_message) {
+            return await message.reply("_Reply to a message to save it to your DM_");
+        }
+
+        let userJid = m.sender || m.key.participant || m.key.remoteJid;
+
+        if (userJid && userJid.endsWith("@lid")) {
+            if (m.key.participantAlt && m.key.participantAlt.includes("@s.whatsapp.net")) {
+                userJid = m.key.participantAlt;
+            } else if (m.isGroup) {
+                try {
+                    const groupMetadata = await message.client.groupMetadata(m.from);
+                    const participant = groupMetadata.participants.find(p =>
+                        p.lid === userJid || p.id === userJid
+                    );
+                    if (participant && participant.phoneNumber) {
+                        userJid = participant.phoneNumber;
+                    }
+                } catch (e) {
+                    console.error("Error resolving LID for save:", e.message);
+                }
+            }
+        }
+
+        if (!userJid || !userJid.includes("@")) {
+            return await message.reply("_Could not determine your phone number_");
+        }
+        const quotedMsg = message.reply_message;
+
+        // Check for view-once messages
+        const isViewOnce = quotedMsg.message?.viewOnceMessageV2 ||
+            quotedMsg.message?.viewOnceMessage ||
+            (quotedMsg.message?.imageMessage?.viewOnce) ||
+            (quotedMsg.message?.videoMessage?.viewOnce) ||
+            (quotedMsg.message?.audioMessage?.viewOnce);
+
+        if (quotedMsg.text) {
+            await message.client.sendMessage(userJid, {
+                text: `*${quotedMsg.text}`
+            });
+        }
+        else if (isViewOnce) {
+            const buffer = await m.quoted.download();
+            let actualMsg = quotedMsg.message?.viewOnceMessageV2?.message ||
+                quotedMsg.message?.viewOnceMessage?.message ||
+                quotedMsg.message;
+
+            if (actualMsg?.imageMessage || quotedMsg.message?.imageMessage?.viewOnce) {
+                await message.client.sendMessage(userJid, {
+                    image: buffer,
+                    caption: `${actualMsg?.imageMessage?.caption || quotedMsg.message?.imageMessage?.caption || ''}`
+                });
+            } else if (actualMsg?.videoMessage || quotedMsg.message?.videoMessage?.viewOnce) {
+                await message.client.sendMessage(userJid, {
+                    video: buffer,
+                    caption: `${actualMsg?.videoMessage?.caption || quotedMsg.message?.videoMessage?.caption || ''}`
+                });
+            } else if (actualMsg?.audioMessage || quotedMsg.message?.audioMessage?.viewOnce) {
+                await message.client.sendMessage(userJid, {
+                    audio: buffer,
+                    mimetype: "audio/mp4",
+                    ptt: true
+                });
+            }
+        }
+        else if (quotedMsg.message?.imageMessage) {
+            const buffer = await m.quoted.download();
+            await message.client.sendMessage(userJid, {
+                image: buffer,
+                caption: quotedMsg.message.imageMessage.caption || ""
+            });
+        }
+        else if (quotedMsg.message?.videoMessage) {
+            const buffer = await m.quoted.download();
+            await message.client.sendMessage(userJid, {
+                video: buffer,
+                caption: quotedMsg.message.videoMessage.caption || ""
+            });
+        }
+        else if (quotedMsg.message?.audioMessage) {
+            const buffer = await m.quoted.download();
+            await message.client.sendMessage(userJid, {
+                audio: buffer,
+                mimetype: "audio/mp4",
+                ptt: quotedMsg.message.audioMessage.ptt || false
+            });
+        }
+        else if (quotedMsg.message?.documentMessage) {
+            const buffer = await m.quoted.download();
+            await message.client.sendMessage(userJid, {
+                document: buffer,
+                mimetype: quotedMsg.message.documentMessage.mimetype || "application/octet-stream",
+                fileName: quotedMsg.message.documentMessage.fileName || "saved_file"
+            });
+        }
+        else if (quotedMsg.message?.stickerMessage) {
+            const buffer = await m.quoted.download();
+            await message.client.sendMessage(userJid, {
+                sticker: buffer
+            });
+        }
+        else if (quotedMsg.message?.contactMessage) {
+            await message.client.sendMessage(userJid, {
+                contacts: {
+                    displayName: quotedMsg.message.contactMessage.displayName,
+                    contacts: [{ vcard: quotedMsg.message.contactMessage.vcard }]
+                }
+            });
+        }
+        else if (quotedMsg.message?.locationMessage) {
+            await message.client.sendMessage(userJid, {
+                location: {
+                    degreesLatitude: quotedMsg.message.locationMessage.degreesLatitude,
+                    degreesLongitude: quotedMsg.message.locationMessage.degreesLongitude
+                }
+            });
+        }
+        else if (quotedMsg.message?.pollCreationMessage) {
+            const poll = quotedMsg.message.pollCreationMessage;
+            let pollText = `*Saved Poll*\n\n*Q:* ${poll.name}\n\n`;
+            poll.options.forEach((opt, i) => {
+                pollText += `${i + 1}. ${opt.optionName}\n`;
+            });
+            await message.client.sendMessage(userJid, { text: pollText });
+        }
+        else {
+            return await message.reply("_Unsupported message type_");
+        }
+    } catch (error) {
+        console.error("Error saving message:", error);
         await message.reply(`_Error: ${error.message}_`);
     }
 });

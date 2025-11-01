@@ -22,7 +22,6 @@ global.cache = {
 
 async function initializeSession() {
     if (!fs.existsSync("./resources/auth/creds.json")) {
-        console.log("Session not found. Creating session...");
         try {
             await MakeSession(global.config.SESSION_ID, "./resources/auth");
             console.log("Session created successfully.");
@@ -112,7 +111,6 @@ async function axiom() {
 
                         // Settings status
                         startupMsg += `*Settings:*\n`;
-                        startupMsg += `• Mode: ${global.config.WORK_TYPE}\n`;
                         startupMsg += `• Always Online: ${global.SettingsDB.getAlwaysOnline() ? 'on' : 'off'}\n`;
                         startupMsg += `• Auto Read: ${global.SettingsDB.getAutoRead() ? 'on' : 'off'}\n`;
                         startupMsg += `• Auto Typing: ${global.SettingsDB.getAutoTyping() ? 'on' : 'off'}\n`;
@@ -170,6 +168,61 @@ async function axiom() {
             try {
                 const metadata = await conn.groupMetadata(event.id);
                 global.cache.groups.set(event.id, metadata);
+
+                // Handle welcome/goodbye messages
+                const { id, participants, action } = event;
+
+                if (action === "add" && global.WelcomeDB.isWelcomeEnabled(id)) {
+                    for (const participant of participants) {
+                        try {
+                            const welcomeMsg = global.WelcomeDB.getWelcomeMessage(id);
+                            const memberCount = metadata.participants.length;
+
+                            // Get participant JID (handle both string and object formats)
+                            const participantJid = typeof participant === 'string' ? participant : (participant.id || participant.jid || participant);
+                            const participantNumber = participantJid.split('@')[0];
+
+                            // Replace variables in message
+                            let message = welcomeMsg
+                                .replace(/@user/g, `@${participantNumber}`)
+                                .replace(/@group/g, metadata.subject)
+                                .replace(/@count/g, memberCount.toString());
+
+                            await conn.sendMessage(id, {
+                                text: message,
+                                mentions: [participantJid]
+                            });
+                        } catch (error) {
+                            console.error("Error sending welcome message:", error);
+                        }
+                    }
+                }
+
+                if ((action === "remove" || action === "leave") && global.WelcomeDB.isGoodbyeEnabled(id)) {
+                    for (const participant of participants) {
+                        try {
+                            const goodbyeMsg = global.WelcomeDB.getGoodbyeMessage(id);
+                            const memberCount = metadata.participants.length;
+
+                            // Get participant JID (handle both string and object formats)
+                            const participantJid = typeof participant === 'string' ? participant : (participant.id || participant.jid || participant);
+                            const participantNumber = participantJid.split('@')[0];
+
+                            // Replace variables in message
+                            let message = goodbyeMsg
+                                .replace(/@user/g, `@${participantNumber}`)
+                                .replace(/@group/g, metadata.subject)
+                                .replace(/@count/g, memberCount.toString());
+
+                            await conn.sendMessage(id, {
+                                text: message,
+                                mentions: [participantJid]
+                            });
+                        } catch (error) {
+                            console.error("Error sending goodbye message:", error);
+                        }
+                    }
+                }
             } catch (err) {
                 console.error(`Failed to get group metadata for ${event.id}:`, err.message);
                 global.cache.groups.del(event.id);
@@ -615,6 +668,105 @@ async function axiom() {
                     return;
                 }
 
+                // Antilink & Antiword detection for groups
+                if (msg.key.remoteJid.endsWith("@g.us") && msg.body) {
+                    const { decodeJid } = require("./lib/functions");
+
+                    // Local isAdmin function for antilink check
+                    const checkUserAdmin = async (jid, user, client) => {
+                        try {
+                            const groupMetadata = await client.groupMetadata(jid);
+                            const decodedUser = decodeJid(user);
+
+                            const userParticipant = groupMetadata.participants.find(p => {
+                                const participantId = decodeJid(p.id || p.jid || p.phoneNumber);
+                                return participantId === decodedUser;
+                            });
+
+                            if (!userParticipant) {
+                                console.log(`User ${decodedUser} not found in group participants`);
+                                return false;
+                            }
+
+                            return userParticipant.admin !== null;
+                        } catch (error) {
+                            console.error("Error in checkUserAdmin:", error);
+                            return false;
+                        }
+                    };
+
+                    // Check if user is admin (admins are immune)
+                    const userJid = decodeJid(msg.key.participant || msg.sender);
+                    const userIsAdmin = await checkUserAdmin(msg.key.remoteJid, userJid, conn);
+
+                    if (!userIsAdmin) {
+                        // Antilink detection
+                        if (global.WelcomeDB.isAntilinkEnabled(msg.key.remoteJid)) {
+                            const linkRegex = /(https?:\/\/[^\s]+)|(www\.[^\s]+)|((chat\.whatsapp\.com|wa\.me)\/[^\s]+)/gi;
+
+                            if (linkRegex.test(msg.body)) {
+                                const action = global.WelcomeDB.getAntilinkAction(msg.key.remoteJid);
+
+                                try {
+                                    await conn.sendMessage(msg.key.remoteJid, { delete: msg.key });
+
+                                    if (action === "warn") {
+                                        await conn.sendMessage(msg.key.remoteJid, {
+                                            text: `@${userNumber}, links are not allowed in this group!`,
+                                            mentions: [msg.sender]
+                                        });
+                                    } else if (action === "kick") {
+                                        await conn.groupParticipantsUpdate(msg.key.remoteJid, [msg.sender], "remove");
+                                        await conn.sendMessage(msg.key.remoteJid, {
+                                            text: `@${userNumber} was removed for sending links`,
+                                            mentions: [msg.sender]
+                                        });
+                                    }
+
+                                    return;
+                                } catch (error) {
+                                    console.error("Error handling antilink:", error);
+                                }
+                            }
+                        }
+
+                        // Antiword detection
+                        if (global.WelcomeDB.isAntiwordEnabled(msg.key.remoteJid)) {
+                            const bannedWords = global.WelcomeDB.getBannedWords(msg.key.remoteJid);
+                            const messageText = msg.body.toLowerCase();
+
+                            const foundWord = bannedWords.find(word =>
+                                messageText.includes(word.toLowerCase())
+                            );
+
+                            if (foundWord) {
+                                const action = global.WelcomeDB.getAntiwordAction(msg.key.remoteJid);
+
+                                try {
+                                    await conn.sendMessage(msg.key.remoteJid, { delete: msg.key });
+
+                                    if (action === "warn") {
+                                        await conn.sendMessage(msg.key.remoteJid, {
+                                            text: `@${userNumber}, that word is not allowed in this group!`,
+                                            mentions: [msg.sender]
+                                        });
+                                    } else if (action === "kick") {
+                                        await conn.groupParticipantsUpdate(msg.key.remoteJid, [msg.sender], "remove");
+                                        await conn.sendMessage(msg.key.remoteJid, {
+                                            text: `@${userNumber} was removed for using banned words`,
+                                            mentions: [msg.sender]
+                                        });
+                                    }
+
+                                    return;
+                                } catch (error) {
+                                    console.error("Error handling antiword:", error);
+                                }
+                            }
+                        }
+                    }
+                }
+
                 let text_msg = msg.body;
                 let prefix = global.config.HANDLERS.trim();
 
@@ -642,6 +794,7 @@ async function axiom() {
                         console.error("Error auto-reading message:", error);
                     }
                 }
+
                 if (text_msg && global.config.LOGS) {
                     console.log(
                         `At : ${msg.from.endsWith("@g.us") ? (await conn.groupMetadata(msg.from)).subject : msg.from}\nFrom : ${msg.sender}\nMessage:${text_msg}\nSudo:${msg.sudo}`
@@ -649,7 +802,8 @@ async function axiom() {
                 }
 
                 events.commands.map(async (command) => {
-                    if (command.fromMe && !msg.sudo) return;
+                    // Only allow sudo users to use the bot
+                    if (!msg.sudo) return;
 
                     let prefix = global.config.HANDLERS.trim();
                     let comman = text_msg;

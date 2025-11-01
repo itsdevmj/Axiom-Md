@@ -5,7 +5,6 @@ const axios = require("axios");
 command({
 	on: "text",
     pattern: "vsss",
-	fromMe: false,
 }, async(message, match ,m )=>{
 	
 	if(!isYT(match)) return;

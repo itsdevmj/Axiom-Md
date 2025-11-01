@@ -3,7 +3,6 @@ const os = require('os');
 
 command({
   pattern: 'menu',
-  fromMe: false,
   desc: 'List commands',
   dontAddCommandList: true,
   type: 'info'
@@ -79,7 +78,6 @@ command({
 
 command({
   pattern: 'info',
-  fromMe: false,
   desc: 'Get command information',
   dontAddCommandList: true,
   type: 'info'
@@ -103,8 +101,7 @@ command({
         }
         categories[cmd.type].push({
           name: commandName,
-          desc: cmd.desc || 'No description',
-          fromMe: cmd.fromMe
+          desc: cmd.desc || 'No description'
         });
       }
     });
@@ -125,7 +122,6 @@ command({
       cmds.forEach(cmd => {
         response += `││◦➛ ${global.config.HANDLERS}${cmd.name}
 ││   ${cmd.desc}
-││   Mode: ${cmd.fromMe ? 'Private' : 'Public'}
 ││
 `;
       });
@@ -168,7 +164,6 @@ command({
 ││◦➛ Name: ${cmdName}
 ││◦➛ Type: ${cmd.type}
 ││◦➛ Description: ${cmd.desc || 'No description'}
-││◦➛ Mode: ${cmd.fromMe ? 'Private' : 'Public'}
 │╰────────────┈⊷
 ╰─────────────┈⊷`;
 

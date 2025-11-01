@@ -7,7 +7,6 @@ const fs = require('fs');
 // ============ STICKER COMMAND ============
 command({
     pattern: "sticker",
-    fromMe: false,
     desc: "Img/Vid - Sticker",
     type: "converter"
 }, async (message, match, m) => {
@@ -47,7 +46,6 @@ const randomUserAgent = userAgentList[Math.floor(Math.random() * userAgentList.l
 
 command({
     pattern: "url",
-    fromMe: false,
     desc: "Img/Vid - Url",
     type: "converter"
 }, async (message, match, m) => {
@@ -71,7 +69,6 @@ command({
 // ============ MP3 COMMAND ============
 command({
     pattern: "mp3",
-    fromMe: false,
     desc: "Video - Audio",
     type: "converter"
 }, async (message, match, m) => {
@@ -93,7 +90,6 @@ const apiKey = '527cdd000ff0fca268a9d8eaf5d218a8';
 
 command({
     pattern: "tts",
-    fromMe: true,
     desc: "Text - VN",
     type: "converter"
 }, async (message, match, m) => {

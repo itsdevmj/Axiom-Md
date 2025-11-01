@@ -5,7 +5,6 @@ const axios = require("axios");
 // ============ SONG COMMAND ============
 command({
     pattern: "song",
-    fromMe: false,
     desc: "Download songs",
     type: "download"
 }, async (message, match, m) => {
@@ -24,7 +23,6 @@ command({
 let tx;
 command({
     pattern: "find",
-    fromMe: false,
     desc: "Music finder",
     type: "download"
 }, async (message, match, m) => {

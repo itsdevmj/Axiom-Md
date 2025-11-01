@@ -8,7 +8,7 @@ if (fs.existsSync('config.env')) {
 
 require('./resources/database/settings');
 
-const envSudo = process.env.SUDO ? process.env.SUDO.split(',').map(s => s.trim()) : ['2348142304526'];
+const envSudo = process.env.SUDO ? process.env.SUDO.split(',').map(s => s.trim()) : [''];
 envSudo.forEach(number => {
     if (number && !global.SettingsDB.isSudo(number)) {
         global.SettingsDB.addSudo(number);
@@ -34,7 +34,6 @@ global.config = {
     CALL_REJECT_MESSAGE: global.SettingsDB.getCallRejectMessage(),
     OWNER_NAME: process.env.OWNER_NAME || 'MJ',
     BOT_NAME: process.env.BOT_NAME || 'Axiom-MD',
-    WORK_TYPE: process.env.WORK_TYPE || 'private',
     ALIVE_MESSAGE: global.SettingsDB.getAliveMessage(),
     ALIVE_IMAGE: global.SettingsDB.getAliveImage(),
 };

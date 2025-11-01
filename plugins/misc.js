@@ -6,7 +6,6 @@ const { getJson } = require("../lib");
 // ============ ALIVE COMMAND ============
 command({
     pattern: "alive",
-    fromMe: false,
     type: "misc",
     desc: "Bot status"
 }, async (message, m, match) => {
@@ -31,7 +30,6 @@ command({
 // ============ SET ALIVE MESSAGE ============
 command({
     pattern: "setalive",
-    fromMe: true,
     type: "misc",
     desc: "Set custom alive message"
 }, async (message, match) => {
@@ -49,7 +47,6 @@ command({
 // ============ SET ALIVE IMAGE ============
 command({
     pattern: "setaliveimg",
-    fromMe: true,
     type: "misc",
     desc: "Set alive message image"
 }, async (message, match) => {
@@ -79,7 +76,6 @@ command({
 // ============ REMOVE ALIVE IMAGE ============
 command({
     pattern: "delaliveimg",
-    fromMe: true,
     type: "misc",
     desc: "Remove alive message image"
 }, async (message) => {
@@ -88,24 +84,107 @@ command({
     return message.reply(`${result.message}`);
 });
 
-// ============ TERMINAL COMMAND ============
+// ============ UPDATE COMMAND ============
 command({
-    pattern: "run",
-    fromMe: true,
-    desc: "Run linux machine",
-    type: "machine"
-}, async (message, match, m) => {
-    if (!match) return;
-    exec(match, (error, stdout, stderr) => {
+    pattern: "update",
+    type: "misc",
+    desc: "Check and update bot from GitHub"
+}, async (message, match) => {
+    const repo = process.env.REPO || "https://github.com/M4STERJOSH/Axiom-MD";
+    const branch = global.config.BRANCH || "main";
+    const forceUpdate = match && match.toLowerCase() === "now";
+
+    try {
+        await message.reply("Checking for updates...");
+
+        exec("git status", async (error, stdout, stderr) => {
+            if (error) {
+                return message.reply(`Git not initialized. Please clone the repository properly.\n\nError: ${error.message}`);
+            }
+
+            exec(`git fetch origin ${branch}`, async (fetchError, fetchStdout, fetchStderr) => {
+                if (fetchError) {
+                    return message.reply(`Failed to fetch updates.\n\nError: ${fetchError.message}`);
+                }
+
+                exec(`git rev-list HEAD...origin/${branch} --count`, async (countError, countStdout, countStderr) => {
+                    if (countError) {
+                        return message.reply(`Failed to check updates.\n\nError: ${countError.message}`);
+                    }
+
+                    const updateCount = parseInt(countStdout.trim());
+
+                    if (updateCount === 0 && !forceUpdate) {
+                        return message.reply("Bot is already up to date!");
+                    }
+
+                    exec(`git log HEAD..origin/${branch} --oneline`, async (logError, logStdout, logStderr) => {
+                        const commits = logStdout.trim() || "No commit details available";
+
+                        if (updateCount > 0) {
+                            await message.reply(`*${updateCount} update(s) available*\n\n*Recent changes:*\n${commits}\n\n_Updating now..._`);
+                        } else if (forceUpdate) {
+                            await message.reply(`*Force updating...*\n\nResetting to latest version from ${branch} branch.`);
+                        }
+
+                        const pullCmd = forceUpdate ? `git reset --hard origin/${branch}` : `git pull origin ${branch}`;
+
+                        exec(pullCmd, async (pullError, pullStdout, pullStderr) => {
+                            if (pullError) {
+                                return message.reply(`Failed to update.\n\nError: ${pullError.message}\n\nTry: .update now (force update)`);
+                            }
+
+                            exec("npm install", async (npmError, npmStdout, npmStderr) => {
+                                if (npmError) {
+                                    return message.reply(`Update successful but dependency installation failed.\n\nPlease run: npm install\n\nError: ${npmError.message}`);
+                                }
+
+                                await message.reply(`*Update completed successfully!*\n\n${pullStdout}\n\n_Restarting bot..._`);
+
+                                setTimeout(() => {
+                                    process.exit(0);
+                                }, 2000);
+                            });
+                        });
+                    });
+                });
+            });
+        });
+    } catch (error) {
+        return message.reply(`Update failed: ${error.message}`);
+    }
+});
+
+// ============ VERSION COMMAND ============
+command({
+    pattern: "version",
+    type: "misc",
+    desc: "Check bot version and commit info"
+}, async (message) => {
+    const branch = global.config.BRANCH || "main";
+
+    exec("git log -1 --format='%H%n%h%n%s%n%cr'", async (error, stdout, stderr) => {
         if (error) {
-            return message.reply(`Error: ${error.message}`);
+            return message.reply(`Failed to get version info.\n\nError: ${error.message}`);
         }
 
-        if (stderr) {
-            return message.reply(`Error: ${stderr}`);
-        }
+        const [fullHash, shortHash, commitMsg, timeAgo] = stdout.trim().split('\n');
 
-        return message.reply(`Output: ${stdout}`);
+        exec(`git rev-list HEAD...origin/${branch} --count`, async (countError, countStdout) => {
+            const updateCount = countError ? "Unknown" : parseInt(countStdout.trim());
+            const updateStatus = updateCount === 0 ? "Up to date" : `${updateCount} update(s) available`;
+
+            const versionInfo = `*Bot Version Info*\n\n` +
+                `*Version:* ${require('../package.json').version}\n` +
+                `*Branch:* ${branch}\n` +
+                `*Commit:* ${shortHash}\n` +
+                `*Message:* ${commitMsg}\n` +
+                `*Updated:* ${timeAgo}\n` +
+                `*Status:* ${updateStatus}\n\n` +
+                `_Use .update to update the bot_`;
+
+            return message.reply(versionInfo);
+        });
     });
 });
 
@@ -117,7 +196,6 @@ const tiktokRegex = /(?:https?:\/\/)?(?:www\.)?tiktok\.com\/[^\s]+/;
 command({
     pattern: "socials",
     on: "text",
-    fromMe: false,
     desc: "TT/FB/Insta",
     type: "auto",
 }, async (message, match, m) => {
