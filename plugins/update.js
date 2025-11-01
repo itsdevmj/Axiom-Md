@@ -1,168 +1,108 @@
 const { command } = require("../lib");
-const simpleGit = require("simple-git");
-const path = require("path");
-const fs = require("fs");
 const { exec } = require("child_process");
 const { promisify } = require("util");
-
 const execAsync = promisify(exec);
-const git = simpleGit();
-const REPO_URL = global.config.REPO_URL;
-const BRANCH = global.config.BRANCH || 'main';
+const axios = require("axios");
 
-// ============ ENSURE REPO ============
-async function ensureRepo() {
-    try {
-        const gitDir = path.join(process.cwd(), '.git');
-        if (!fs.existsSync(gitDir)) {
-            await git.init();
-            await git.addRemote('origin', REPO_URL);
-            await git.fetch('origin');
-            await git.reset(['--hard', `origin/${BRANCH}`]);
-        }
-        return true;
-    } catch (error) {
-        console.error('Error ensuring repo:', error);
-        return false;
-    }
-}
-
-// ============ CHECK UPDATES ============
-async function checkUpdates() {
-    try {
-        await git.fetch('origin', BRANCH);
-        const status = await git.status();
-        const commits = await git.log([`HEAD..origin/${BRANCH}`]);
-
-        return {
-            hasUpdate: status.behind > 0,
-            commits: commits
-        };
-    } catch (error) {
-        console.error('Error checking updates:', error);
-        return { hasUpdate: false, commits: null };
-    }
-}
+const REPO_URL = "https://github.com/itsdevmj/Axiom-Md";
+const REPO_API = "https://api.github.com/repos/itsdevmj/Axiom-Md/commits/main";
 
 // ============ UPDATE COMMAND ============
 command({
-    pattern: "update",
-    type: "misc",
-    desc: "Check for bot updates"
+  pattern: "update",
+  type: "system",
+  desc: "Check and update bot"
 }, async (message, match) => {
-    const action = match ? match.toLowerCase().trim() : '';
+  const args = match ? match.trim().toLowerCase() : "";
 
-    try {
-        // Ensure git repo is initialized
-        const repoReady = await ensureRepo();
-        if (!repoReady) {
-            return message.reply("_Failed to initialize git repository. Please check your setup._");
-        }
+  try {
+    await message.reply("_Checking for updates..._");
 
-        // Check for updates
-        const checkMsg = await message.reply("_Checking for updates..._");
-        const updateInfo = await checkUpdates();
+    // Get local commit hash
+    const { stdout: localHash } = await execAsync("git rev-parse HEAD");
+    const localCommit = localHash.trim().substring(0, 7);
 
-        if (!updateInfo.hasUpdate) {
-            return message.client.sendMessage(message.jid, {
-                text: "_You're running the latest version!_",
-                edit: checkMsg.key
-            });
-        }
+    // Fetch latest changes
+    await execAsync("git fetch origin main");
 
-        // Format commit messages
-        let commitList = '';
-        if (updateInfo.commits && updateInfo.commits.all && updateInfo.commits.all.length > 0) {
-            commitList = '\n\n*Recent Updates:*\n';
-            updateInfo.commits.all.slice(0, 5).forEach((commit, index) => {
-                const msg = commit.message.split('\n')[0];
-                commitList += `${index + 1}. ${msg}\n`;
-            });
+    // Get remote commit info
+    const { data: remoteData } = await axios.get(REPO_API);
+    const remoteCommit = remoteData.sha.substring(0, 7);
+    const commitMessage = remoteData.commit.message;
+    const commitDate = new Date(remoteData.commit.author.date).toLocaleString();
 
-            if (updateInfo.commits.all.length > 5) {
-                commitList += `\n_...and ${updateInfo.commits.all.length - 5} more updates_`;
-            }
-        }
-
-        if (action === 'now') {
-            const statusMsg = await message.reply("_Updating bot... Please wait._");
-
-            try {
-                // Pull latest changes
-                await message.client.sendMessage(message.jid, {
-                    text: "_Pulling latest changes..._",
-                    edit: statusMsg.key
-                });
-                await git.pull('origin', BRANCH, { '--rebase': 'true' });
-
-                // Install dependencies
-                await message.client.sendMessage(message.jid, {
-                    text: "_Installing dependencies..._",
-                    edit: statusMsg.key
-                });
-                await execAsync('npm install --legacy-peer-deps');
-
-                await message.client.sendMessage(message.jid, {
-                    text: "_Update completed successfully!_\n\n_Restarting bot..._",
-                    edit: statusMsg.key
-                });
-
-                // Restart the bot
-                setTimeout(() => {
-                    process.exit(0);
-                }, 2000);
-
-            } catch (error) {
-                console.error('Update error:', error);
-                return message.client.sendMessage(message.jid, {
-                    text: `_Update failed: ${error.message}_\n\n_Please update manually or contact support._`,
-                    edit: statusMsg.key
-                });
-            }
-        } else {
-            return message.reply(`*Update Available!*${commitList}\n\n*To update, use:*\n.update now\n\n_Bot will restart after update_`);
-        }
-
-    } catch (error) {
-        console.error('Update command error:', error);
-        return message.reply(`_Error: ${error.message}_`);
+    if (localCommit === remoteCommit) {
+      return await message.reply(`*Bot is up to date*\n\n*Current Version:* ${localCommit}\n*Latest Commit:* ${commitMessage}\n*Date:* ${commitDate}`);
     }
-});
 
-// ============ REPO INFO COMMAND ============
-command({
-    pattern: "repo",
-    type: "misc",
-    desc: "Get repository information"
-}, async (message) => {
-    try {
-        const repoReady = await ensureRepo();
-        if (!repoReady) {
-            return message.reply(`*Repository:* ${REPO_URL}\n*Branch:* ${BRANCH}\n\n_Git not initialized_`);
-        }
+    // Get commits behind
+    const { stdout: behindCount } = await execAsync(`git rev-list --count HEAD..origin/main`);
+    const behind = behindCount.trim();
 
-        const remotes = await git.getRemotes(true);
-        const branch = await git.branch();
-        const log = await git.log({ maxCount: 1 });
+    let updateMsg = `*Update Available*\n\n`;
+    updateMsg += `*Current Version:* ${localCommit}\n`;
+    updateMsg += `*Latest Version:* ${remoteCommit}\n`;
+    updateMsg += `*Commits Behind:* ${behind}\n`;
+    updateMsg += `*Latest Commit:* ${commitMessage}\n`;
+    updateMsg += `*Date:* ${commitDate}\n\n`;
 
-        let repoInfo = `*Repository Information*\n\n`;
-        repoInfo += `*URL:* ${REPO_URL}\n`;
-        repoInfo += `*Branch:* ${branch.current}\n`;
+    // If "now" argument is provided, update immediately
+    if (args === "now") {
+      await message.reply(updateMsg + "\n_Starting update..._");
 
-        if (log.latest) {
-            repoInfo += `*Latest Commit:* ${log.latest.message.split('\n')[0]}\n`;
-            repoInfo += `*Author:* ${log.latest.author_name}\n`;
-            repoInfo += `*Date:* ${new Date(log.latest.date).toLocaleDateString()}\n`;
-        }
+      // Check if there are local changes
+      const { stdout: statusOutput } = await execAsync("git status --porcelain");
 
-        repoInfo += `\n*Commands:*\n`;
-        repoInfo += `• .update - Check for updates\n`;
-        repoInfo += `• .update now - Update bot`;
+      if (statusOutput.trim()) {
+        await message.reply("*Local changes detected*\n\nStashing local changes...");
+        await execAsync("git stash");
+      }
 
-        return message.reply(repoInfo);
+      // Pull updates
+      await message.reply("_Pulling updates..._");
+      const { stdout: pullOutput } = await execAsync("git pull origin main");
 
-    } catch (error) {
-        console.error('Repo command error:', error);
-        return message.reply(`*Repository:* ${REPO_URL}\n*Branch:* ${BRANCH}\n\n_Error: ${error.message}_`);
+      // Get new commit hash
+      const { stdout: newHash } = await execAsync("git rev-parse HEAD");
+      const newCommit = newHash.trim().substring(0, 7);
+
+      // Install dependencies if package.json changed
+      if (pullOutput.includes("package.json")) {
+        await message.reply("_Installing dependencies..._");
+        await execAsync("npm install");
+      }
+
+      let successMsg = `*Update Successful*\n\n`;
+      successMsg += `*Previous Version:* ${localCommit}\n`;
+      successMsg += `*Current Version:* ${newCommit}\n\n`;
+      successMsg += `_Restarting bot..._`;
+
+      await message.reply(successMsg);
+
+      // Restart bot
+      setTimeout(() => {
+        process.exit(0);
+      }, 2000);
+
+    } else {
+      updateMsg += `Use *${global.config.HANDLERS}update now* to install updates`;
+      await message.reply(updateMsg);
     }
+
+  } catch (error) {
+    console.error("Update error:", error);
+
+    let errorMsg = `*Update Failed*\n\n`;
+    errorMsg += `*Error:* ${error.message}\n\n`;
+
+    if (error.message.includes("CONFLICT")) {
+      errorMsg += `*Reason:* Merge conflict detected\n`;
+      errorMsg += `*Solution:* Contact bot owner to resolve conflicts`;
+    } else if (error.message.includes("not a git repository")) {
+      errorMsg += `*Reason:* Not a git repository\n`;
+      errorMsg += `*Solution:* Clone the bot from ${REPO_URL}`;
+    }
+
+    await message.reply(errorMsg);
+  }
 });
