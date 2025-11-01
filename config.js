@@ -36,4 +36,5 @@ global.config = {
     BOT_NAME: process.env.BOT_NAME || 'Axiom-MD',
     ALIVE_MESSAGE: global.SettingsDB.getAliveMessage(),
     ALIVE_IMAGE: global.SettingsDB.getAliveImage(),
+    REPO_URL: process.env.REPO_URL || 'https://github.com/itsdevmj/Axiom-Md',
 };
