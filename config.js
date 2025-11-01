@@ -22,7 +22,7 @@ global.config = {
     AUTO_RECORD: global.SettingsDB.getAutoRecord(),
     AUTO_READ: global.SettingsDB.getAutoRead(),
     LOGS: process.env.LOGS === 'true' || true,
-    ANTILINK_ACTION: process.env.ANTI_LINK || 'kick',
+    ANTILINK_ACTION: process.env.ANTI_LINK || 'delete',
     SESSION_ID: process.env.SESSION_ID || '',
     PORT: process.env.PORT || 8000,
     HANDLERS: process.env.HANDLER || '.',
