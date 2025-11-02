@@ -1,4 +1,5 @@
 const { command } = require("../lib");
+const { checkForUpdates, updateLocal, restartBot } = require("../lib/updater");
 
 // ============ ANTI-DELETE COMMAND ============
 command({
@@ -98,5 +99,50 @@ command({
         }
     } catch (error) {
         await message.reply(`Error: ${error.message}`);
+    }
+});
+
+// ============ UPDATE CHECKER COMMAND ============
+command({
+    pattern: "update",
+    desc: "Check for bot updates",
+    type: "utility"
+}, async (message) => {
+    try {
+        await message.reply("_Checking for updates..._");
+        
+        const updateInfo = await checkForUpdates();
+        
+        if (!updateInfo.hasUpdates) {
+            return await message.reply(updateInfo.message);
+        }
+        
+        await message.reply(updateInfo.message);
+    } catch (error) {
+        console.error("Error in update command:", error);
+        await message.reply("_An error occurred while checking for updates._");
+    }
+});
+
+// ============ UPDATE NOW COMMAND ============
+command({
+    pattern: "updatenow",
+    desc: "Update bot to latest version",
+    type: "utility"
+}, async (message) => {
+    try {
+        await message.reply("_Starting update..._");
+        
+        const result = await updateLocal();
+        
+        await message.reply(result.message);
+        
+        if (result.success && result.updated) {
+            await message.reply("_Restarting bot..._");
+            restartBot();
+        }
+    } catch (error) {
+        console.error("Error in updatenow command:", error);
+        await message.reply("_Update failed. Please check logs._");
     }
 });
