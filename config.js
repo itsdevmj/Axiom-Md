@@ -28,7 +28,7 @@ global.config = {
     PORT: process.env.PORT || 8000,
     HANDLERS: process.env.HANDLER || '.',
     BRANCH: 'main',
-    PACKNAME: process.env.PACKNAME || '',
+    PACKNAME: process.env.PACKNAME || 'MJ',
     AUTHOR: process.env.AUTHOR || 'M4STERJOSH',
     SUDO: global.SettingsDB.getSudoList(),
     CALL_REJECT: global.SettingsDB.getCallReject(),
