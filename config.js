@@ -21,6 +21,7 @@ global.config = {
     AUTO_TYPING: global.SettingsDB.getAutoTyping(),
     AUTO_RECORD: global.SettingsDB.getAutoRecord(),
     AUTO_READ: global.SettingsDB.getAutoRead(),
+    AUTO_UPDATE: process.env.AUTO_UPDATE !== 'true',
     LOGS: process.env.LOGS === 'true' || true,
     ANTILINK_ACTION: process.env.ANTI_LINK || 'delete',
     SESSION_ID: process.env.SESSION_ID || '',

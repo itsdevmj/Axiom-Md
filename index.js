@@ -13,6 +13,7 @@ const app = express();
 const port = global.config.PORT;
 const NodeCache = require('node-cache');
 const EV = require("events");
+const { checkAndUpdate } = require("./lib/updater");
 EV.setMaxListeners(0);
 
 global.cache = {
@@ -802,7 +803,6 @@ async function axiom() {
                 }
 
                 events.commands.map(async (command) => {
-                    // Only allow sudo users to use the bot
                     if (!msg.sudo) return;
 
                     let prefix = global.config.HANDLERS.trim();
@@ -870,6 +870,9 @@ app.listen(port, () => console.log(`Server listening on http://localhost:${port}
 
 async function startBot() {
     try {
+        // Check for updates before starting
+        await checkAndUpdate();
+        
         await initializeSession();
         await p();
         axiom();
